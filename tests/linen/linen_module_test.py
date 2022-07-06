@@ -1733,6 +1733,28 @@ class ModuleTest(absltest.TestCase):
     self.assertTrue(foo.init_with_output(k)[0])
     self.assertFalse(foo.apply({}))
 
+  def test_jit_pytree_error(self):
+
+    class Foo(nn.Module):
+
+      @compact
+      def __call__(self, x):
+        return x
+
+    x = jnp.ones((3, 2))
+    foo = Foo()
+    variables = foo.init(random.PRNGKey(0), x)
+
+    @jax.jit
+    def step(model, params, x):
+      unused_logits = model.apply(params, x)
+      return params
+
+    with self.assertRaisesRegex(errors.JitPytreeError, 'use static_argnames'):
+      _ = step(foo, variables, x)
+
+  
+
 
 if __name__ == '__main__':
   absltest.main()

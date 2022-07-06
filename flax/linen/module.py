@@ -20,14 +20,9 @@ import functools
 import inspect
 import threading
 import typing
-import weakref
 from typing import (Any, Callable, Dict, Generic, Iterable, List, Optional,
                     Sequence, Set, Tuple, Type, TypeVar, Union, overload)
-
-import jax
-import numpy as np
-from typing_extensions import \
-    dataclass_transform  # pytype: disable=not-supported-yet
+import weakref
 
 from flax import (config, core, errors, serialization, traceback_util,
                   traverse_util)
@@ -37,7 +32,11 @@ from flax.core.scope import (  # pylint: disable=g-multiple-import
     CollectionFilter, DenyList, FrozenVariableDict, Variable, VariableDict,
     union_filters)
 from flax.linen import summary
-
+import jax
+from jax.tree_util import register_pytree_node
+import numpy as np
+from typing_extensions import \
+    dataclass_transform  # pytype: disable=not-supported-yet
 
 
 traceback_util.register_exclusion(__file__)
@@ -520,6 +519,17 @@ class Module:
   @classmethod
   def __init_subclass__(cls, **kwargs: Any) -> None:
     """Automatically initializes all subclasses as custom dataclasses."""
+    # Register Module subclasses as pytrees so that we can raise an informative
+    # error if user tries to pass a Module through a jitted transformation.
+    def tree_flatten_error(self):
+      raise errors.JitPytreeError()
+
+    def tree_unflatten_error(cls, aux_data, children):
+      raise errors.JitPytreeError()
+
+    jax.tree_util.register_pytree_node(cls, tree_flatten_error,
+                                       tree_unflatten_error)
+
     super().__init_subclass__(**kwargs)
     # All Flax Modules are dataclasses.  We force this convention since
     # it encourages the stateless behavior needed to clone module instances for
@@ -1396,14 +1406,14 @@ class Module:
     return True
 
   def tabulate(
-    self,
-    rngs: Union[PRNGKey, RNGSequences],
-    *args,
-    method: Optional[Callable[..., Any]] = None,
-    mutable: CollectionFilter = True,
-    depth: Optional[int] = None,
-    exclude_methods: Sequence[str] = (),
-    **kwargs) -> str:
+      self,
+      rngs: Union[PRNGKey, RNGSequences],
+      *args,
+      method: Optional[Callable[..., Any]] = None,
+      mutable: CollectionFilter = True,
+      depth: Optional[int] = None,
+      exclude_methods: Sequence[str] = (),
+      **kwargs) -> str:
     """Creates a summary of the Module represented as a table.
 
     This method has the same signature as `init`, but instead of returning
