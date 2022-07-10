@@ -1,0 +1,5 @@
+env
+TFDS_DATA_DIR
+data_*
+~
+__pycache__

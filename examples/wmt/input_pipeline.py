@@ -324,12 +324,17 @@ def get_wmt_datasets(config: ml_collections.ConfigDict,
   if vocab_path is None:
     vocab_path = os.path.expanduser('~/wmt_sentencepiece_model')
 
+  dataset_dir = 'TFDS_DATA_DIR'
+  os.environ["TFDS_DATA_DIR"] = dataset_dir
   train_ds_builder = tfds.builder(config.dataset_name)
+  # Nok: Download the dataset.
+  train_ds_builder.download_and_prepare()
   train_data = get_raw_dataset(
       train_ds_builder, 'train', reverse_translation=reverse_translation)
 
   if config.eval_dataset_name:
     eval_ds_builder = tfds.builder(config.eval_dataset_name)
+    eval_ds_builder.download_and_prepare()
   else:
     eval_ds_builder = train_ds_builder
   eval_data = get_raw_dataset(

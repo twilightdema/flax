@@ -54,7 +54,7 @@ def get_config():
   config.num_predict_steps = -1
 
   # Base learning rate.
-  config.learning_rate = 0.002
+  config.learning_rate = 0.001
 
   # Linear learning rate warmup.
   config.warmup_steps = 1000
@@ -86,10 +86,10 @@ def get_config():
   # Size of embeddings.
   config.emb_dim = 1024
   # Size of the MLP.
-  config.mlp_dim = 4096
+  config.mlp_dim = 2048
 
   # Number of attention heads.
-  config.num_heads = 16
+  config.num_heads = 8
 
   # Dropout rate.
   config.dropout_rate = 0.1
